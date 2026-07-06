@@ -1,29 +1,37 @@
-# Lab 4: A First Neural Network
+# Lab 4: A First Neural Network with Keras
 
 > **Machine Learning with AI and Python** · Day 2
 > Prerequisite: Lab 3 (Day 2) complete
 
 ## The scenario
 
-A postal service wants to read handwritten digits on envelopes automatically. Each digit is a tiny 8×8 grayscale image — 64 pixel values — and the model must classify it as 0 through 9. This is the task that made neural networks famous. Today you will build one, see it learn in real time, and understand why it works on image-like data where simpler models start to struggle.
+A postal service wants to read handwritten digits on envelopes automatically. Each digit is a tiny 8×8 grayscale image — 64 pixel values — and the model must classify it as 0 through 9. This is the task that made neural networks famous. Today you will build one with Keras, watch it learn epoch by epoch, and understand why depth helps on image-like data where simpler models start to struggle.
 
 ## Why this lab matters
 
-Every model you have built so far — linear regression, logistic regression, decision trees, random forests — makes predictions through a single transformation of the input features. A neural network stacks many transformations, each one learning to represent the data at a higher level of abstraction. That depth is what lets it find patterns that flat models miss. But depth also brings new risks: slower training, more ways to overfit, and harder interpretability. This lab shows you the power, the pitfall, and the fix — in that order.
+Every model you have built so far makes predictions through a single transformation of the input features. A neural network stacks many transformations — called layers — each one learning to represent the data at a higher level of abstraction. Keras is the library that makes building those layers readable: you assemble a network the way you would describe it on a whiteboard. That depth is what lets it find patterns flat models miss, but it also brings new risks. This lab shows you the power, the pitfall, and the fix — in that order.
 
 ## What you will do
 
 - Load and visualize digit images to understand the input
 - Scale features and set a logistic regression baseline
-- Build a neural network, understand its architecture, and beat the baseline
+- Build a Keras neural network, read its summary, and beat the baseline
+- Plot training history to watch the model learn epoch by epoch
 - Experiment with depth to see when more layers help and when they do not
-- Plot the training loss curve to watch the model learn
-- Introduce overfitting deliberately, then fix it with early stopping
+- Introduce overfitting deliberately and fix it with an early stopping callback
 - Read a confusion matrix to see which digits the model still confuses
 
 ## Before you start
 
-You will use Python with scikit-learn and matplotlib. Create `neural_network_lab.py`. This lab uses the digits dataset that ships with scikit-learn, so there is no download.
+You will use Python with scikit-learn, TensorFlow/Keras, and matplotlib. Create `neural_network_lab.py`.
+
+Install TensorFlow if you have not already:
+
+```
+pip install tensorflow
+```
+
+This lab uses the digits dataset that ships with scikit-learn, so there is no data download.
 
 ---
 
@@ -53,11 +61,11 @@ plt.tight_layout()
 plt.show()
 ```
 
-**What to notice:** Each image is tiny — 8×8 pixels. Yet humans read these instantly. The question is how much structure a model needs to do the same.
+**What to notice:** Each image is tiny — 8×8 pixels. The 64 pixel values are the features your network will learn from.
 
 ## Step 2: Scale and split
 
-**Why:** Pixel values run from 0 to 16. Scaling brings them to a common range, which speeds up gradient-based training and prevents features with larger raw values from dominating. You saw the same requirement in Lab 3 for distance-based clustering — the underlying reason is the same here.
+**Why:** Pixel values run from 0 to 16. Scaling brings them close to zero with unit variance, which makes gradient-based training faster and more stable. You saw the same requirement in Lab 3 for distance-based clustering — the underlying reason is the same here.
 
 ```python
 from sklearn.preprocessing import StandardScaler
@@ -75,7 +83,7 @@ print("train:", X_train.shape, "test:", X_test.shape)
 
 ## Step 3: Set a baseline with logistic regression
 
-**Why:** Always know what a simpler model can do before adding complexity. Logistic regression is the model you know best from Day 1. If the neural network cannot beat it, the extra complexity is not justified.
+**Why:** Always know what a simpler model can do before adding complexity. If the neural network cannot clearly beat logistic regression here, the extra machinery is not justified.
 
 ```python
 from sklearn.linear_model import LogisticRegression
@@ -89,138 +97,201 @@ print(f"logistic regression accuracy: {lr_acc:.3f}")
 > [!NOTE]
 > **Checkpoint:** Record this number. Every model you build in the rest of the lab is compared against it.
 
-## Step 4: Build a neural network and understand the architecture
+## Step 4: Build your first Keras model
 
-**Why:** A neural network is a sequence of layers. Each layer takes its inputs, multiplies them by learned weights, adds a bias, and passes the result through an activation function. The activation (ReLU here) introduces non-linearity — without it, stacking layers would be mathematically equivalent to one layer. `hidden_layer_sizes=(64,)` means one hidden layer with 64 neurons.
+**Why:** In Keras you describe a network by stacking layers. `Sequential` means data flows straight through from input to output. Each `Dense` layer is fully connected — every neuron receives input from every neuron in the previous layer. `relu` activation introduces non-linearity between layers; `softmax` on the output layer converts raw scores into probabilities that sum to 1, one per class.
 
 ```python
-from sklearn.neural_network import MLPClassifier
+import keras
+from keras import layers
 
-mlp = MLPClassifier(
-    hidden_layer_sizes=(64,),   # one hidden layer, 64 neurons
-    activation="relu",          # ReLU: output = max(0, input)
-    max_iter=500,
-    random_state=42
-).fit(X_train, y_train)
+model = keras.Sequential([
+    keras.Input(shape=(64,)),              # 64 pixels in
+    layers.Dense(64, activation="relu"),   # hidden layer: 64 neurons
+    layers.Dense(10, activation="softmax") # output layer: one score per digit
+])
 
-mlp_acc = accuracy_score(y_test, mlp.predict(X_test))
-print(f"neural network accuracy:      {mlp_acc:.3f}")
-print(f"logistic regression accuracy: {lr_acc:.3f}")
-print(f"improvement: {mlp_acc - lr_acc:+.3f}")
+model.summary()
 ```
 
-**How the architecture works:**
-- **Input layer:** 64 neurons — one per pixel
-- **Hidden layer:** 64 neurons, each connected to all inputs, each applying ReLU
-- **Output layer:** 10 neurons — one per digit class; the highest score wins
+**How to read the summary:** Each row is a layer. `Output Shape` shows the data dimensions after that layer. `Param #` is the number of weights the model will learn in that layer — the first Dense layer alone learns 64×64 + 64 = 4,160 numbers.
 
 > [!NOTE]
-> **Checkpoint:** The neural network should outperform logistic regression. If the gap is small on this dataset, that is informative too — not every problem needs depth.
+> **Checkpoint:** Add up the total parameters from `model.summary()`. Every one of those numbers gets adjusted during training.
 
 ---
 
-## Step 5: Experiment with depth
+## Step 5: Compile, train, and compare to the baseline
 
-**Why:** More layers let the network learn more abstract representations. But more layers also mean more parameters to tune, slower training, and higher risk of overfitting. Test three architectures and see where depth stops helping.
+**Why:** `compile` wires up the learning process: the optimizer adjusts weights, the loss measures how wrong the model is, and metrics are what you monitor. `fit` runs the training loop. `validation_split` holds back 10% of training data so you can watch train versus validation accuracy in real time — one line per epoch.
 
 ```python
-architectures = [
-    (64,),
-    (64, 32),
-    (128, 64, 32),
-]
+model.compile(
+    optimizer="adam",
+    loss="sparse_categorical_crossentropy",
+    metrics=["accuracy"]
+)
 
-print(f"{'architecture':<20} {'test accuracy':>14}")
-print("-" * 36)
-for layers in architectures:
-    m = MLPClassifier(hidden_layer_sizes=layers, activation="relu",
-                      max_iter=500, random_state=42).fit(X_train, y_train)
-    acc = accuracy_score(y_test, m.predict(X_test))
-    print(f"{str(layers):<20} {acc:>14.3f}")
+history = model.fit(
+    X_train, y_train,
+    epochs=50,
+    batch_size=32,
+    validation_split=0.1,
+    verbose=1
+)
+
+nn_acc = model.evaluate(X_test, y_test, verbose=0)[1]
+print(f"\nneural network accuracy:      {nn_acc:.3f}")
+print(f"logistic regression accuracy: {lr_acc:.3f}")
 ```
 
-**What to notice:** Accuracy may improve from one to two layers, then plateau or drop. Adding layers is not free — the model has more to learn and can start memorising instead of generalising.
+**What to notice:** Each epoch prints training loss, training accuracy, validation loss, and validation accuracy. Watch validation accuracy climb toward training accuracy — that is the model generalising, not just memorising.
 
 > [!TIP]
-> In practice, architecture search is often done with cross-validation rather than a single test split. What you see here is a quick signal, not a final answer.
+> `sparse_categorical_crossentropy` works when your labels are integers (0–9). If you one-hot encoded them you would use `categorical_crossentropy` instead.
 
-## Step 6: Plot the training loss curve
+## Step 6: Plot the training history
 
-**Why:** Unlike most sklearn models, a neural network trains iteratively — it makes many passes over the training data, adjusting weights a little each time. The loss curve shows that process: loss should fall steeply at first, then level off. Watching it helps you understand whether training ran long enough and whether the model is still improving.
+**Why:** The `history` object records every metric for every epoch. Plotting train versus validation curves turns the numbers from Step 5 into a picture of the learning process — you can see exactly when the model converges and whether it is starting to overfit.
 
 ```python
-mlp_long = MLPClassifier(
-    hidden_layer_sizes=(64, 32),
-    activation="relu",
-    max_iter=500,
-    random_state=42
-).fit(X_train, y_train)
+fig, axes = plt.subplots(1, 2, figsize=(12, 4))
 
-plt.figure(figsize=(7, 4))
-plt.plot(mlp_long.loss_curve_)
-plt.xlabel("training iteration")
-plt.ylabel("loss")
-plt.title("Training loss — falling loss means the model is learning")
+axes[0].plot(history.history["loss"],     label="train")
+axes[0].plot(history.history["val_loss"], label="validation")
+axes[0].set_xlabel("epoch"); axes[0].set_ylabel("loss")
+axes[0].set_title("Loss"); axes[0].legend()
+
+axes[1].plot(history.history["accuracy"],     label="train")
+axes[1].plot(history.history["val_accuracy"], label="validation")
+axes[1].set_xlabel("epoch"); axes[1].set_ylabel("accuracy")
+axes[1].set_title("Accuracy"); axes[1].legend()
+
 plt.tight_layout()
 plt.show()
-
-print("iterations run:", mlp_long.n_iter_)
 ```
 
-**What to notice:** If the curve is still falling sharply at the end, `max_iter` may be too low. If it flattened out early, the model converged before the limit — good.
+**What to notice:** When training and validation curves stay close together, the model is generalising. When they diverge — training keeps improving but validation flattens or drops — that is overfitting beginning.
 
 ---
 
-## Step 7: Introduce overfitting, then fix it with early stopping
+## Step 7: Experiment with depth
 
-**Why:** A very large network will eventually memorise the training data — training accuracy reaches near 100% while test accuracy stalls or drops. Early stopping monitors a held-out validation set during training and stops when performance there stops improving, the same principle as limiting `max_depth` in Lab 1.
+**Why:** More layers let the network learn more abstract patterns. But more layers also mean more parameters, slower training, and higher risk of overfitting. Test a few architectures side by side to see where depth stops helping.
 
 ```python
-# Overfit deliberately with a very large network and no stopping
-overfit = MLPClassifier(
-    hidden_layer_sizes=(256, 256, 256),
-    activation="relu",
-    max_iter=1000,
-    random_state=42
-).fit(X_train, y_train)
+architectures = {
+    "shallow  (64)":       [64],
+    "medium   (64, 32)":   [64, 32],
+    "deep  (128, 64, 32)": [128, 64, 32],
+}
 
-print("overfit model:")
-print("  train accuracy:", round(accuracy_score(y_train, overfit.predict(X_train)), 3))
-print("  test  accuracy:", round(accuracy_score(y_test,  overfit.predict(X_test)),  3))
+print(f"{'architecture':<26} {'test accuracy':>14}")
+print("-" * 42)
 
-# Fix with early stopping
-stopped = MLPClassifier(
-    hidden_layer_sizes=(256, 256, 256),
-    activation="relu",
-    max_iter=1000,
-    early_stopping=True,     # holds out 10% of training data to monitor
-    random_state=42
-).fit(X_train, y_train)
-
-print("\nearly stopping model:")
-print("  train accuracy:", round(accuracy_score(y_train, stopped.predict(X_train)), 3))
-print("  test  accuracy:", round(accuracy_score(y_test,  stopped.predict(X_test)),  3))
-print("  stopped at iteration:", stopped.best_loss_)
+for name, units in architectures.items():
+    m = keras.Sequential(
+        [keras.Input(shape=(64,))]
+        + [layers.Dense(u, activation="relu") for u in units]
+        + [layers.Dense(10, activation="softmax")]
+    )
+    m.compile(optimizer="adam",
+              loss="sparse_categorical_crossentropy",
+              metrics=["accuracy"])
+    m.fit(X_train, y_train, epochs=50, batch_size=32,
+          validation_split=0.1, verbose=0)
+    acc = m.evaluate(X_test, y_test, verbose=0)[1]
+    print(f"{name:<26} {acc:>14.3f}")
 ```
 
+**What to notice:** Accuracy may improve from one to two layers, then plateau. Adding layers is not free — the model has more to learn and can start memorising instead of generalising.
+
+## Step 8: Introduce overfitting, then fix it with early stopping
+
+**Why:** A very large network trained too long will memorise the training data — training accuracy climbs toward 100% while validation accuracy peaks and then drops. An `EarlyStopping` callback watches validation loss and stops training automatically when it stops improving, the same principle as limiting `max_depth` in Lab 1.
+
+```python
+from keras.callbacks import EarlyStopping
+
+# Overfit deliberately: large network, many epochs, no stopping
+big_model = keras.Sequential([
+    keras.Input(shape=(64,)),
+    layers.Dense(256, activation="relu"),
+    layers.Dense(256, activation="relu"),
+    layers.Dense(256, activation="relu"),
+    layers.Dense(10,  activation="softmax"),
+])
+big_model.compile(optimizer="adam",
+                  loss="sparse_categorical_crossentropy",
+                  metrics=["accuracy"])
+hist_overfit = big_model.fit(
+    X_train, y_train, epochs=200,
+    batch_size=32, validation_split=0.1, verbose=0
+)
+
+# Same network with early stopping
+big_model_es = keras.Sequential([
+    keras.Input(shape=(64,)),
+    layers.Dense(256, activation="relu"),
+    layers.Dense(256, activation="relu"),
+    layers.Dense(256, activation="relu"),
+    layers.Dense(10,  activation="softmax"),
+])
+big_model_es.compile(optimizer="adam",
+                     loss="sparse_categorical_crossentropy",
+                     metrics=["accuracy"])
+early_stop = EarlyStopping(monitor="val_loss", patience=10, restore_best_weights=True)
+hist_stopped = big_model_es.fit(
+    X_train, y_train, epochs=200,
+    batch_size=32, validation_split=0.1,
+    callbacks=[early_stop], verbose=0
+)
+
+print(f"overfit model stopped at epoch: 200")
+print(f"early stopping stopped at epoch: {early_stop.stopped_epoch + 1}")
+
+# Plot both
+fig, axes = plt.subplots(1, 2, figsize=(12, 4))
+for ax, hist, title in [
+    (axes[0], hist_overfit,  "No early stopping"),
+    (axes[1], hist_stopped,  "With early stopping"),
+]:
+    ax.plot(hist.history["accuracy"],     label="train")
+    ax.plot(hist.history["val_accuracy"], label="validation")
+    ax.set_xlabel("epoch"); ax.set_ylabel("accuracy")
+    ax.set_title(title); ax.legend()
+plt.tight_layout()
+plt.show()
+```
+
+**What to notice:** The left plot shows the classic overfit pattern — training accuracy climbs but validation diverges. The right plot stops at the best validation point. `restore_best_weights=True` means the saved model is from that best epoch, not the last one.
+
 > [!WARNING]
-> A high train accuracy paired with a meaningfully lower test accuracy is always a sign of overfitting — regardless of how good the train number looks. The test score is the only one that matters for deployment.
+> A high training accuracy paired with lower validation accuracy is always a sign of overfitting, regardless of how good the training number looks. The validation score is the only one that matters.
 
-## Step 8: Confusion matrix — which digits still get confused?
+---
 
-**Why:** Accuracy is a single number; the confusion matrix shows exactly where the model makes mistakes. On a 10-class problem this is far more informative — you can see which digit pairs look similar to the model and where human-level difficulty shows up.
+## Step 9: Confusion matrix — which digits still get confused?
+
+**Why:** Accuracy is a single number; the confusion matrix shows exactly where the model makes mistakes. On a 10-class problem this reveals which specific digit pairs the model struggles with — information a single score completely hides.
 
 ```python
 from sklearn.metrics import confusion_matrix, ConfusionMatrixDisplay, classification_report
 
-best_mlp = MLPClassifier(
-    hidden_layer_sizes=(64, 32),
-    activation="relu",
-    max_iter=500,
-    random_state=42
-).fit(X_train, y_train)
+best_model = keras.Sequential([
+    keras.Input(shape=(64,)),
+    layers.Dense(64, activation="relu"),
+    layers.Dense(32, activation="relu"),
+    layers.Dense(10, activation="softmax"),
+])
+best_model.compile(optimizer="adam",
+                   loss="sparse_categorical_crossentropy",
+                   metrics=["accuracy"])
+best_model.fit(X_train, y_train, epochs=50, batch_size=32,
+               validation_split=0.1, verbose=0)
 
-pred = best_mlp.predict(X_test)
+pred_probs = best_model.predict(X_test)
+pred = pred_probs.argmax(axis=1)
 
 print(classification_report(y_test, pred))
 
@@ -230,12 +301,12 @@ disp = ConfusionMatrixDisplay(
 )
 fig, ax = plt.subplots(figsize=(8, 7))
 disp.plot(ax=ax, colorbar=False, cmap="Blues")
-ax.set_title("Confusion matrix — neural network on digits")
+ax.set_title("Confusion matrix — Keras neural network on digits")
 plt.tight_layout()
 plt.show()
 ```
 
-**What to notice:** Mistakes tend to cluster around visually similar pairs: 3 and 8, 4 and 9, 1 and 7. These are the same pairs humans sometimes hesitate on. Off-diagonal values represent errors; a nearly diagonal matrix means strong performance.
+**What to notice:** Mistakes tend to cluster around visually similar pairs — 3 and 8, 4 and 9, 1 and 7. The same pairs humans sometimes hesitate on. A nearly diagonal matrix means strong performance across all classes.
 
 > [!NOTE]
 > **Checkpoint:** You can name two digit pairs the model most often confuses and explain why those specific pairs make sense visually.
@@ -247,27 +318,27 @@ plt.show()
 You are evaluating this model for a postal sorting system:
 
 1. The system processes millions of envelopes per day. A 97% accurate model still misreads thousands of digits — for which digits (based on the confusion matrix) would you want a human to double-check the model's output?
-2. Try `activation="tanh"` instead of `"relu"` on the (64, 32) architecture. Does it improve or hurt accuracy? Look up what tanh does differently from ReLU and write one sentence explaining the trade-off.
-3. Compare the neural network to a `RandomForestClassifier` on the same digits data. Which wins on accuracy? Which would you trust more for this task and why?
+2. Add a `layers.Dropout(0.3)` layer after each Dense hidden layer and retrain. Does dropout improve validation accuracy? Look up what dropout does and write one sentence explaining it as an overfitting prevention technique.
+3. Compare the neural network to a `RandomForestClassifier` on the same digits data using the same train/test split. Which wins on accuracy, and which would you trust more in a production system and why?
 
 ## Responsible AI
 
 > [!IMPORTANT]
 > - Neural networks are harder to explain than decision trees or logistic regression. Before deploying one in a consequential system, ask whether the accuracy gain is worth the loss of interpretability.
 > - A model trained on one population's handwriting can fail on another's. Digits written in different cultures or by people with motor impairments may fall outside the training distribution.
-> - High overall accuracy can hide poor performance on a specific class. Always check the per-class rows of the classification report before declaring the model ready.
+> - High overall accuracy can hide poor performance on a specific class. Always check the per-class rows of the classification report — not just the bottom-line number — before declaring a model ready.
 
 ## What you learned
 
-- A neural network stacks layers of weighted connections with non-linear activations between them
-- Scaling is required before training because gradient descent is sensitive to feature magnitude
-- Depth (more layers) can improve performance but also increases overfitting risk
-- The training loss curve shows the model learning iteratively — watch for convergence, not just final loss
-- Early stopping is the neural network equivalent of `max_depth`: it prevents memorisation by stopping training when validation performance peaks
+- Neural networks are stacked layers of weighted connections with non-linear activations between them
+- Keras lets you build a network by assembling layers, and `model.summary()` shows the architecture and parameter count
+- `compile` sets the optimizer, loss, and metrics; `fit` runs the training loop and returns a history you can plot
+- Plotting train versus validation curves reveals overfitting as the two lines diverge
+- `EarlyStopping` stops training when validation performance peaks — the neural network equivalent of `max_depth`
 - Confusion matrices on multi-class problems reveal which specific errors the model makes, not just how many
 
 ## Stretch goals
 
-- Use `GridSearchCV` to search over `hidden_layer_sizes` and `alpha` (the regularisation strength) and find the best architecture by cross-validated accuracy.
-- Try `MLPClassifier` with `solver="sgd"` and `learning_rate_init=0.01`. Plot the loss curve alongside the default `solver="adam"` and compare convergence speed.
-- Visualize what the first hidden layer has learned: reshape the weight matrix `best_mlp.coefs_[0]` into 64 images of 8×8 pixels and plot them — each image is a "feature detector" the network learned.
+- Add `layers.Dropout(0.3)` after each hidden layer and compare train vs validation accuracy curves to the version without dropout. What does the gap look like?
+- Try the `RMSprop` optimizer instead of `adam` and compare convergence speed on the loss curve.
+- Visualize what the first hidden layer learned: extract `best_model.layers[0].get_weights()[0]`, reshape each of the 64 columns into an 8×8 image, and plot them — each image is a pattern detector the network discovered.
