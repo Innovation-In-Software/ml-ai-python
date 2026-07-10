@@ -1,0 +1,100 @@
+QuantumRouter QR-500 — SOHO WiFi 6 Router
+Product Manual v1.8
+
+OVERVIEW
+The QuantumRouter QR-500 is a dual-band WiFi 6 (802.11ax) router for small offices and home users. It provides wireless speeds up to 3600 Mbps combined, a built-in VPN client, parental controls, and a USB 3.0 port for storage sharing. It can be managed via the QuantumNet mobile app (iOS and Android) or the local web interface.
+
+DEFAULT ACCESS
+- Management IP: 192.168.1.1
+- Web interface: http://192.168.1.1
+- Default username: admin
+- Default password: quantum500home
+- The default WiFi SSIDs are printed on the label on the bottom of the device.
+  2.4GHz SSID: QuantumNet-XXXX (XXXX = last 4 chars of MAC address)
+  5GHz SSID:   QuantumNet-5G-XXXX
+  Default WiFi password: printed on the bottom label
+
+INITIAL SETUP
+1. Connect the WAN port to your modem or ISP gateway using the included Cat5e cable.
+2. Connect your computer to any LAN port (1–4) or to the WiFi using the label credentials.
+3. Open a browser and navigate to http://192.168.1.1.
+4. Log in with the default credentials above.
+5. The Quick Setup wizard will guide you through: ISP connection type, WiFi SSID and password, and admin password change.
+6. Alternatively, download the QuantumNet app and scan the QR code on the router bottom for guided setup.
+
+WIFI CONFIGURATION
+To change your wireless settings:
+1. Log in to http://192.168.1.1.
+2. Navigate to Wireless > Basic Settings.
+3. For the 2.4GHz band: set SSID, password (WPA3 or WPA2/WPA3 mixed recommended), and channel (Auto recommended).
+4. For the 5GHz band: settings are identical but channel options differ (36–177 in 5GHz).
+5. Click Save. The router will briefly restart the wireless radios — connected devices will reconnect automatically.
+
+Band Steering: Navigate to Wireless > Advanced > Band Steering. When enabled, the router automatically moves compatible devices to the faster 5GHz band. Disable this if you have devices that must stay on 2.4GHz.
+
+GUEST NETWORK
+1. Navigate to Wireless > Guest Network.
+2. Enable the guest network toggle.
+3. Set a separate SSID and password for guests.
+4. The guest network is isolated from your main LAN by default — guests cannot access your local devices.
+5. Set a bandwidth limit under Guest Network > QoS Limit to prevent guests from saturating your connection.
+
+PARENTAL CONTROLS
+1. Navigate to Parental Controls > Devices.
+2. Click Add Device and select from the list of connected devices.
+3. Set a schedule (e.g., internet off after 10pm on weekdays).
+4. Enable content filtering: choose from pre-defined categories (Adult, Gambling, Social Media) or add custom blocked domains.
+5. Changes take effect immediately.
+
+VPN CLIENT
+The QR-500 supports OpenVPN and WireGuard client modes, allowing your entire network to route through a VPN provider.
+1. Navigate to VPN > Client.
+2. Select the protocol (OpenVPN or WireGuard).
+3. Upload the configuration file from your VPN provider (.ovpn or .conf).
+4. Click Connect.
+5. All devices on the LAN will route through the VPN tunnel.
+Note: VPN throughput is limited to approximately 150 Mbps due to the encryption overhead on the consumer-grade processor.
+
+PORT FORWARDING
+1. Navigate to Advanced > Port Forwarding > Add Rule.
+2. Enter a name, the external port (or range), the internal device IP, and the internal port.
+3. Select the protocol (TCP, UDP, or Both).
+4. Click Save.
+Example: To forward external port 443 to an internal web server at 192.168.1.50:
+   Name: WebServer, External Port: 443, Internal IP: 192.168.1.50, Internal Port: 443, Protocol: TCP.
+
+USB STORAGE SHARING
+1. Plug a USB drive into the USB 3.0 port on the rear.
+2. Navigate to USB > Storage.
+3. The drive will appear as a shared SMB folder on your network: \\192.168.1.1\usb
+4. Set a username and password for share access under USB > Access Control.
+5. Supported filesystems: FAT32, exFAT, NTFS (read/write), ext4 (read-only).
+
+FIRMWARE UPDATE
+1. Navigate to System > Firmware.
+2. Click Check for Updates. The router checks the QuantumNet update server.
+3. If an update is available, click Download and Install.
+4. The router will update and reboot automatically (approximately 3 minutes).
+5. Alternatively, download firmware manually from portal.quantumnet.example/qr500 and upload via System > Firmware > Manual Upload.
+
+FACTORY RESET
+Hold the RESET button (recessed, on the rear) for 8 seconds using a pin until the power LED flashes. The router resets and reboots (approximately 60 seconds). All settings including WiFi credentials are erased and return to the values printed on the bottom label.
+
+TROUBLESHOOTING
+No internet after setup: Check the WAN port LED — it should be solid green. If blinking amber, the ISP connection type may be set incorrectly. Navigate to Internet > Connection Type and try PPPoE if your ISP requires a username and password, or DHCP if not.
+WiFi devices cannot connect: Check that the WiFi password was entered correctly (passwords are case-sensitive). If you changed the SSID, reconnect with the new name.
+Slow WiFi: Try changing the 2.4GHz channel to 1, 6, or 11 (non-overlapping) under Wireless > Advanced. For 5GHz, avoid channels already used by neighbours using a WiFi analyser app.
+Error QR500-ERR-004 "WAN IP not assigned": Your ISP may require the device MAC address to be registered. Navigate to Internet > MAC Clone and clone your computer's MAC address.
+Error QR500-ERR-012 "USB drive not detected": Reformat the drive as exFAT. Drives over 2TB must use exFAT or NTFS — FAT32 does not support volumes over 2TB.
+
+SPECIFICATIONS
+WiFi Standards: IEEE 802.11ax/ac/n/g/b/a
+2.4GHz speed: Up to 600 Mbps (2x2 MU-MIMO)
+5GHz speed: Up to 3000 Mbps (4x4 MU-MIMO)
+WAN: 1x 1GbE RJ45
+LAN: 4x 1GbE RJ45
+USB: 1x USB 3.0 Type-A
+Power: 12V DC 2A (adapter included)
+Dimensions: 225 x 148 x 38mm (without antennas)
+Operating temperature: 0°C to 40°C
+Warranty: 2 years hardware

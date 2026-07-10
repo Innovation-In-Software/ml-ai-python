@@ -1,0 +1,51 @@
+[
+  {
+    "id": "qr5000",
+    "name": "QuantumRouter QR-5000",
+    "category": "Enterprise Router",
+    "price": 1299.99,
+    "description": "High-performance enterprise router with dual WAN failover, BGP routing, and hardware-based security module. Designed for medium to large businesses requiring carrier-grade reliability.",
+    "specs": {
+      "WAN Ports": "2x 10GbE SFP+",
+      "LAN Ports": "8x 1GbE RJ45",
+      "Max VLANs": "256",
+      "Routing Protocols": "BGP, OSPF, RIP v2, Static",
+      "Firewall Throughput": "10 Gbps",
+      "Default IP": "192.168.10.1",
+      "Default Password": "QNet$5000Admin"
+    },
+    "manual_file": "qr5000.txt"
+  },
+  {
+    "id": "qr500",
+    "name": "QuantumRouter QR-500",
+    "category": "SOHO Router",
+    "price": 149.99,
+    "description": "Dual-band WiFi 6 router for small offices and home users. Easy setup wizard, parental controls, and built-in VPN client. Managed via the QuantumNet mobile app.",
+    "specs": {
+      "WiFi": "WiFi 6 (802.11ax), 2.4GHz + 5GHz",
+      "Max Speed": "3600 Mbps combined",
+      "LAN Ports": "4x 1GbE RJ45",
+      "USB": "1x USB 3.0 (storage sharing)",
+      "Default IP": "192.168.1.1",
+      "Default Password": "quantum500home"
+    },
+    "manual_file": "qr500.txt"
+  },
+  {
+    "id": "qs24",
+    "name": "QuantumSwitch QS-24",
+    "category": "Managed Switch",
+    "price": 499.99,
+    "description": "24-port managed PoE+ switch with full VLAN, LACP port aggregation, and Spanning Tree Protocol support. Ideal for wiring closets and structured cabling installations.",
+    "specs": {
+      "Ports": "24x 1GbE RJ45 PoE+, 4x 10GbE SFP+ Uplink",
+      "PoE Budget": "370W total",
+      "Switching Capacity": "128 Gbps",
+      "Max VLANs": "512",
+      "Default IP": "10.10.10.1",
+      "Default Password": "QSwitch@2024"
+    },
+    "manual_file": "qs24.txt"
+  }
+]

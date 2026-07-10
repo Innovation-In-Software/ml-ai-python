@@ -1,0 +1,51 @@
+{% extends "base.html" %}
+{% block title %}{{ product.name }} — QuantumNet{% endblock %}
+{% block content %}
+<nav aria-label="breadcrumb" class="mb-3">
+  <ol class="breadcrumb">
+    <li class="breadcrumb-item"><a href="/">Products</a></li>
+    <li class="breadcrumb-item active">{{ product.name }}</li>
+  </ol>
+</nav>
+
+<div class="row g-4">
+  <div class="col-md-8">
+    <div class="card">
+      <div class="card-body">
+        <span class="badge bg-secondary mb-2">{{ product.category }}</span>
+        <h1 class="h3">{{ product.name }}</h1>
+        <p class="text-muted">{{ product.description }}</p>
+        <h2 class="h5 mt-4">Specifications</h2>
+        <table class="table table-sm">
+          <tbody>
+            {% for key, value in product.specs.items() %}
+            <tr>
+              <th class="text-muted fw-normal" style="width:40%">{{ key }}</th>
+              <td>{{ value }}</td>
+            </tr>
+            {% endfor %}
+          </tbody>
+        </table>
+      </div>
+    </div>
+  </div>
+  <div class="col-md-4">
+    <div class="card bg-primary text-white">
+      <div class="card-body text-center py-4">
+        <i class="bi bi-chat-dots display-4 mb-3 d-block"></i>
+        <h5>Have a question?</h5>
+        <p class="small opacity-75">Ask the AI assistant anything about this product — configuration, troubleshooting, specs.</p>
+        <a href="/chat?product_id={{ product.id }}" class="btn btn-light">
+          Ask About This Product
+        </a>
+      </div>
+    </div>
+    <div class="card mt-3">
+      <div class="card-body text-center">
+        <p class="text-muted small mb-1">Price</p>
+        <p class="h3 text-primary mb-0">${{ "%.2f"|format(product.price) }}</p>
+      </div>
+    </div>
+  </div>
+</div>
+{% endblock %}

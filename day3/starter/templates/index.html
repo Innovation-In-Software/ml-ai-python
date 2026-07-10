@@ -1,0 +1,34 @@
+{% extends "base.html" %}
+{% block title %}Products — QuantumNet{% endblock %}
+{% block content %}
+<div class="d-flex justify-content-between align-items-center mb-4">
+  <div>
+    <h1 class="h3 mb-0">Product Catalog</h1>
+    <p class="text-muted mb-0">{{ products|length }} products</p>
+  </div>
+  <a href="/chat" class="btn btn-primary"><i class="bi bi-chat-dots me-2"></i>Ask the Assistant</a>
+</div>
+
+<div class="row g-4">
+  {% for product in products %}
+  <div class="col-md-4">
+    <div class="card h-100">
+      <div class="card-body">
+        <span class="badge bg-secondary category-badge mb-2">{{ product.category }}</span>
+        <h5 class="card-title">{{ product.name }}</h5>
+        <p class="card-text text-muted small">{{ product.description }}</p>
+        <p class="fw-bold text-primary">${{ "%.2f"|format(product.price) }}</p>
+      </div>
+      <div class="card-footer bg-white border-0 d-flex gap-2">
+        <a href="/product/{{ product.id }}" class="btn btn-outline-secondary btn-sm flex-fill">
+          <i class="bi bi-info-circle me-1"></i>Specs
+        </a>
+        <a href="/chat?product_id={{ product.id }}" class="btn btn-primary btn-sm flex-fill">
+          <i class="bi bi-chat me-1"></i>Ask About This
+        </a>
+      </div>
+    </div>
+  </div>
+  {% endfor %}
+</div>
+{% endblock %}

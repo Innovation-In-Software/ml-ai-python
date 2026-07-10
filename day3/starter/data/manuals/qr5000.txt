@@ -1,0 +1,111 @@
+QuantumRouter QR-5000 — Enterprise Router
+Product Manual v2.3
+
+OVERVIEW
+The QuantumRouter QR-5000 is a carrier-grade enterprise router designed for medium to large business environments. It supports dual WAN failover, BGP and OSPF dynamic routing, 256 VLANs, and a hardware security module (HSM) for encrypted key storage.
+
+DEFAULT ACCESS
+- Management IP: 192.168.10.1
+- Web interface: https://192.168.10.1:8443
+- Default username: admin
+- Default password: QNet$5000Admin
+- SSH access: ssh admin@192.168.10.1 (port 22)
+- Console baud rate: 115200
+
+INITIAL SETUP
+1. Connect your management workstation to the MGMT port (labeled MGT0) using a Cat6 cable.
+2. Set your workstation IP to 192.168.10.2/24.
+3. Open a browser and navigate to https://192.168.10.1:8443.
+4. Accept the self-signed certificate warning.
+5. Log in with the default credentials above.
+6. The setup wizard launches automatically on first login.
+7. Change the default password immediately — the system will not proceed until you do.
+
+VLAN CONFIGURATION
+To create a new VLAN:
+1. Navigate to Network > VLANs > Add VLAN.
+2. Enter the VLAN ID (1–4094) and a description.
+3. Set the VLAN type: Access, Trunk, or Hybrid.
+4. Click Apply.
+
+To assign a VLAN to a physical interface:
+1. Navigate to Network > Interfaces > [select interface].
+2. Under VLAN Assignment, select the VLAN ID from the dropdown.
+3. For trunk ports, check "Allow all VLANs" or specify a comma-separated list.
+4. Click Save and Apply Configuration.
+
+The inter-VLAN routing is handled automatically by the built-in L3 switch fabric. To disable routing between two VLANs, add a deny rule under Security > Firewall > VLAN Policies.
+
+BGP CONFIGURATION
+The QR-5000 supports eBGP and iBGP. To configure a BGP neighbour:
+1. Navigate to Routing > BGP > Neighbours > Add.
+2. Enter the neighbour IP address and their AS number.
+3. Set the local AS number (must match your organisation's registered ASN).
+4. Set the update source interface if using loopback peering.
+5. Under Authentication, enter the MD5 password if required by the peer.
+6. Click Apply.
+
+To advertise a network via BGP:
+1. Navigate to Routing > BGP > Networks > Add.
+2. Enter the prefix (e.g. 203.0.113.0/24) and the associated route-map if applicable.
+3. Click Apply and confirm the route appears in Routing > BGP > RIB.
+
+DUAL WAN FAILOVER
+1. Navigate to Network > WAN > Failover.
+2. Set WAN1 as Primary and WAN2 as Secondary.
+3. Configure the health-check target IP (recommended: 8.8.8.8 or your ISP gateway).
+4. Set the health-check interval (default: 10 seconds) and failure threshold (default: 3 failures).
+5. Enable "Preempt" if you want traffic to return to WAN1 after recovery.
+6. Click Save.
+
+Failover typically completes in under 30 seconds. Stateful sessions are preserved for TCP connections established at least 5 seconds before the failover event.
+
+FIREWALL RULES
+Rules are evaluated top-to-bottom. The default policy is DENY ALL at the bottom of each chain.
+- Navigate to Security > Firewall > Rules.
+- Click Add Rule.
+- Set source zone, destination zone, protocol, and action (Allow/Deny/Log).
+- Drag rules to reorder. Rules higher in the list take precedence.
+- Click Apply All to commit changes.
+
+IMPORTANT: Changes to firewall rules take effect immediately on Apply. Test from a separate management connection before applying rules that might affect your current session.
+
+FIRMWARE UPDATE
+1. Download the latest firmware from portal.quantumnet.example/support using your support contract credentials.
+2. Navigate to System > Firmware > Upload.
+3. Upload the .qfw file and click Validate.
+4. After validation, click Install. The router will reboot (approximately 4 minutes).
+5. Do not power off during the update — this will corrupt the firmware.
+
+FACTORY RESET
+Hard reset (physical): Hold the RESET button on the rear panel for 10 seconds until the STATUS LED flashes amber. Release. The device reboots to factory defaults in approximately 90 seconds.
+Soft reset (web): System > Factory Reset > Confirm.
+Note: All configuration, logs, and certificates are erased on factory reset.
+
+TROUBLESHOOTING
+Error QR5-ERR-001 "WAN link down": Check physical connection to WAN port. Verify ISP circuit is active. Run "show interface wan0" from the CLI.
+Error QR5-ERR-007 "BGP session not established": Verify the neighbour IP is reachable (ping from routing table). Check AS number match. Verify MD5 password if configured.
+Error QR5-ERR-019 "VLAN flood detected": A broadcast storm has been detected on the specified VLAN. Check for a switching loop — STP should prevent this but may need to be re-enabled on Network > VLANs > [VLAN] > STP.
+Error QR5-ERR-031 "HSM initialisation failed": The hardware security module requires a 6-digit PIN on first boot. Navigate to Security > HSM > Initialise. If already initialised and this error appears, contact support — HSM may need replacement.
+
+CLI QUICK REFERENCE
+show running-config          — display current configuration
+show interface [name]        — interface status and counters
+show routing table           — display IP routing table
+show bgp summary             — BGP neighbour status
+ping [ip] source [interface] — test reachability from a specific interface
+debug bgp events             — enable BGP debug logging (disable after use)
+reload                       — reboot the device
+
+SPECIFICATIONS
+Processor: Quad-core 2.4 GHz network processor
+RAM: 8 GB DDR4
+Storage: 32 GB eMMC
+WAN: 2x 10GbE SFP+ (LC connector)
+LAN: 8x 1GbE RJ45
+Management: 1x dedicated MGMT port (1GbE RJ45), 1x RS-232 console (RJ45)
+Power: Dual redundant PSU, 100-240V AC, 60W max
+Operating temperature: 0°C to 45°C
+Dimensions: 1U rack mount, 438 x 300 x 44mm
+Weight: 4.2 kg
+Warranty: 5 years hardware, lifetime software updates with active support contract

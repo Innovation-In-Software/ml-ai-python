@@ -1,0 +1,124 @@
+{% extends "base.html" %}
+{% block title %}Ask a Question — QuantumNet{% endblock %}
+{% block content %}
+<div class="row justify-content-center">
+  <div class="col-lg-8">
+    <div class="d-flex justify-content-between align-items-center mb-3">
+      <h1 class="h3 mb-0"><i class="bi bi-chat-dots me-2"></i>Product Assistant</h1>
+      <a href="/" class="btn btn-outline-secondary btn-sm">← Products</a>
+    </div>
+
+    <div class="card mb-3">
+      <div class="card-body py-2">
+        <label class="form-label text-muted small mb-1">Filter by product (optional)</label>
+        <select id="product-filter" class="form-select form-select-sm">
+          <option value="">All products</option>
+          {% for p in products %}
+          <option value="{{ p.id }}" {% if selected and selected.id == p.id %}selected{% endif %}>
+            {{ p.name }}
+          </option>
+          {% endfor %}
+        </select>
+      </div>
+    </div>
+
+    <div class="card mb-3">
+      <div id="chat-messages" class="card-body" style="height:420px; overflow-y:auto;">
+        <div class="text-center text-muted py-5" id="empty-state">
+          <i class="bi bi-chat display-4 d-block mb-2 opacity-25"></i>
+          Ask anything about our products — configuration, setup, troubleshooting, specs.
+          {% if selected %}
+          <br><span class="badge bg-primary mt-2">Focused on {{ selected.name }}</span>
+          {% endif %}
+        </div>
+      </div>
+    </div>
+
+    <div class="input-group">
+      <input type="text" id="question-input" class="form-control"
+             placeholder="e.g. How do I configure a VLAN on the QR-5000?" />
+      <button class="btn btn-primary" id="send-btn" onclick="sendQuestion()">
+        <i class="bi bi-send"></i>
+      </button>
+    </div>
+    <p class="text-muted small mt-2">Press Enter to send</p>
+  </div>
+</div>
+
+<script>
+  const messagesEl = document.getElementById("chat-messages");
+  const inputEl    = document.getElementById("question-input");
+  const sendBtn    = document.getElementById("send-btn");
+  const emptyState = document.getElementById("empty-state");
+
+  function appendMessage(role, text) {
+    if (emptyState) emptyState.remove();
+    const wrapper = document.createElement("div");
+    wrapper.className = `d-flex mb-3 ${role === "user" ? "justify-content-end" : "justify-content-start"}`;
+
+    const bubble = document.createElement("div");
+    bubble.className = `p-3 rounded-3 ${role === "user"
+      ? "bg-primary text-white"
+      : "bg-light border"
+    }`;
+    bubble.style.maxWidth = "80%";
+    bubble.style.whiteSpace = "pre-wrap";
+    bubble.innerHTML = `<span class="fw-semibold d-block mb-1 small">${role === "user" ? "You" : "Assistant"}</span>${escapeHtml(text)}`;
+
+    wrapper.appendChild(bubble);
+    messagesEl.appendChild(wrapper);
+    messagesEl.scrollTop = messagesEl.scrollHeight;
+  }
+
+  function appendLoading() {
+    const el = document.createElement("div");
+    el.id = "loading-indicator";
+    el.className = "d-flex justify-content-start mb-3";
+    el.innerHTML = `<div class="p-3 rounded-3 bg-light border">
+      <span class="spinner-grow spinner-grow-sm me-1" role="status"></span>
+      <span class="text-muted small">Searching manuals...</span>
+    </div>`;
+    messagesEl.appendChild(el);
+    messagesEl.scrollTop = messagesEl.scrollHeight;
+  }
+
+  function removeLoading() {
+    const el = document.getElementById("loading-indicator");
+    if (el) el.remove();
+  }
+
+  function escapeHtml(text) {
+    return text.replace(/&/g,"&amp;").replace(/</g,"&lt;").replace(/>/g,"&gt;");
+  }
+
+  async function sendQuestion() {
+    const question  = inputEl.value.trim();
+    const productId = document.getElementById("product-filter").value;
+    if (!question) return;
+
+    inputEl.value = "";
+    sendBtn.disabled = true;
+    appendMessage("user", question);
+    appendLoading();
+
+    try {
+      const resp = await fetch("/api/chat", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ question, product_id: productId || null })
+      });
+      const data = await resp.json();
+      removeLoading();
+      appendMessage("assistant", data.answer || data.error || "No response.");
+    } catch (err) {
+      removeLoading();
+      appendMessage("assistant", "Error contacting the server: " + err.message);
+    } finally {
+      sendBtn.disabled = false;
+      inputEl.focus();
+    }
+  }
+
+  inputEl.addEventListener("keypress", e => { if (e.key === "Enter") sendQuestion(); });
+</script>
+{% endblock %}

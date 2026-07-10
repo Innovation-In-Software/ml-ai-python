@@ -1,0 +1,114 @@
+QuantumSwitch QS-24 — 24-Port Managed PoE+ Switch
+Product Manual v3.1
+
+OVERVIEW
+The QuantumSwitch QS-24 is a fully managed Layer 2/3 switch with 24 x 1GbE RJ45 PoE+ ports and 4 x 10GbE SFP+ uplink ports. It supports up to 512 VLANs, LACP port aggregation, IEEE 802.3at PoE+ with a 370W budget, and full Spanning Tree Protocol (STP/RSTP/MSTP). Designed for wiring closets and structured cabling installations.
+
+DEFAULT ACCESS
+- Management IP: 10.10.10.1
+- Web interface: https://10.10.10.1
+- Default username: admin
+- Default password: QSwitch@2024
+- Out-of-band management: dedicated MGMT port (use 10.10.10.0/24 subnet)
+- Console port: Mini-USB to USB-A cable (115200 baud, 8N1)
+
+INITIAL SETUP
+1. Connect your management workstation to the MGMT port.
+2. Set your workstation IP to 10.10.10.2/24.
+3. Open a browser and navigate to https://10.10.10.1.
+4. Accept the self-signed certificate and log in with default credentials.
+5. Change the admin password on first login — the system requires this before proceeding.
+6. Optionally assign a production management IP under System > Management IP to move management to your main network.
+
+VLAN CONFIGURATION
+Creating a VLAN:
+1. Navigate to Switching > VLANs > VLAN List > Create.
+2. Enter the VLAN ID (2–4094) and a name.
+3. Click Apply.
+
+Assigning ports to VLANs:
+- Access port (untagged, single VLAN):
+  Navigate to Switching > VLANs > Port Settings > [port number].
+  Set Mode to "Access". Select the VLAN ID from the dropdown.
+  Click Apply. The port carries traffic only for this VLAN.
+
+- Trunk port (tagged, multiple VLANs):
+  Navigate to Switching > VLANs > Port Settings > [port number].
+  Set Mode to "Trunk". Set the Native VLAN (untagged VLAN, typically VLAN 1 or your management VLAN).
+  In the "Allowed VLANs" field, enter the VLAN IDs to pass (e.g. "10,20,30" or "10-50").
+  Click Apply.
+
+- Hybrid port (mix of tagged and untagged):
+  Set Mode to "Hybrid". Assign one untagged VLAN and one or more tagged VLANs.
+
+VLAN Routing (L3):
+The QS-24 supports inter-VLAN routing via VLAN interfaces (SVIs).
+1. Navigate to Routing > VLAN Interfaces > Add.
+2. Select the VLAN ID and assign an IP address (e.g. 10.20.0.1/24).
+3. This becomes the default gateway for devices on that VLAN.
+4. Enable routing under Routing > IP Routing > Enable.
+
+POE+ MANAGEMENT
+The QS-24 has a total PoE budget of 370W across all 24 ports.
+- Maximum per port: 30W (IEEE 802.3at PoE+)
+- To view PoE usage: navigate to PoE > Status. The table shows power drawn per port and total budget used.
+- To set a per-port power limit: navigate to PoE > Settings > [port]. Set Max Power (W). Useful to prevent a single device from consuming more than its allocation.
+- To disable PoE on a port (data-only): navigate to PoE > Settings > [port] > PoE Mode > Off.
+- PoE priority: set to Critical, High, or Low per port. When the budget is exceeded, lower-priority ports are shut down first. Configure under PoE > Settings > [port] > Priority.
+- Error QS24-POE-001 "Over budget": The total PoE draw has exceeded 370W. Reduce per-port limits or disable PoE on non-critical ports.
+
+LACP PORT AGGREGATION
+Link Aggregation Control Protocol (LACP) combines multiple physical ports into a single logical link for increased bandwidth and redundancy.
+1. Navigate to Switching > LAG > Create LAG.
+2. Assign a LAG ID (1–8) and select the member ports (must be the same speed).
+3. Set LACP Mode: Active (sends LACP PDUs) or Passive (responds only).
+4. Click Apply.
+5. Assign the LAG to VLANs the same way as a physical port.
+
+Note: Both ends of the link must have LACP configured. Ports in a LAG must all be set to the same speed and duplex. Using ports from different line cards in the same LAG is not supported.
+
+SPANNING TREE PROTOCOL (STP)
+STP prevents switching loops. The QS-24 supports STP (802.1D), RSTP (802.1w), and MSTP (802.1s).
+1. Navigate to Switching > STP > Global Settings.
+2. Select the STP version (RSTP recommended for most environments).
+3. Click Apply.
+
+To configure port roles:
+- Navigate to Switching > STP > Port Settings.
+- Set portfast (edge) to Enabled for ports connected to end devices (PCs, printers) — this bypasses the listening/learning states for faster convergence.
+- Do NOT enable portfast on uplink ports connected to other switches.
+
+Bridge Priority: Lower priority = more likely to become root bridge. Default is 32768. To make this switch the root: navigate to STP > Global > Bridge Priority, set to 4096, click Apply.
+
+FIRMWARE UPDATE
+1. Download firmware from portal.quantumnet.example/qs24 (requires support login).
+2. Navigate to System > Firmware > Upload.
+3. Select the .qsw firmware file and click Upload.
+4. After checksum validation, click Apply. The switch reboots (approximately 2 minutes).
+5. Do not power cycle during the update.
+
+FACTORY RESET
+Hardware: Hold the MODE button on the front panel for 15 seconds. The SYS LED will flash red three times then go solid amber. Release. The switch resets and reboots (approximately 90 seconds).
+Software: System > Reset > Factory Default > Confirm.
+Note: Factory reset clears all VLAN, STP, LAG, and PoE configuration. Management IP returns to 10.10.10.1.
+
+TROUBLESHOOTING
+Error QS24-ERR-002 "STP topology change": A device was connected or disconnected and STP is recalculating. This is normal. If it occurs repeatedly, check for a loose cable or a device sending spurious BPDUs.
+Error QS24-ERR-005 "LACP PDU timeout on port X": The remote end has stopped sending LACP PDUs. Check the cable and verify LACP is configured on the remote device.
+Error QS24-ERR-011 "Duplicate management IP": Another device on the network has the same IP as the switch management interface. Change the management IP under System > Management IP.
+Port not forwarding traffic: Verify the port is not in STP blocking state (Switching > STP > Port Status). Verify the correct VLAN is assigned. Check the port LED — amber means the port is in STP blocking state, green means forwarding.
+
+SPECIFICATIONS
+Switching ports: 24x 1GbE RJ45 PoE+ (IEEE 802.3at, max 30W/port)
+Uplink ports: 4x 10GbE SFP+ (DAC or optical transceivers sold separately)
+Management: 1x dedicated MGMT port (1GbE RJ45), 1x Mini-USB console
+Switching capacity: 128 Gbps non-blocking
+Forwarding rate: 95.2 Mpps
+MAC address table: 32,000 entries
+Max VLANs: 512
+PoE budget: 370W total
+Power supply: Internal, 100-240V AC, 450W max draw
+Rack mount: 1U, 440 x 380 x 44mm
+Weight: 5.8 kg
+Operating temperature: 0°C to 45°C
+Warranty: Limited lifetime hardware, 5-year software support with active contract
