@@ -201,54 +201,8 @@ print(answer)
 
 ---
 
-## Step 5: Compare to retrieve_and_generate
 
-Bedrock also offers a single API call that handles retrieval and generation together. The `retrieve` + `generate` pattern you built gives you full control over the prompt. `retrieve_and_generate` is faster to build and AWS handles citation formatting for you.
-
-```python
-def managed_answer(question, product_id=None):
-    """AWS-managed RAG - retrieval and generation in one call."""
-    config = {
-        "knowledgeBaseConfiguration": {
-            "knowledgeBaseId": KNOWLEDGE_BASE_ID,
-            "modelArn": f"arn:aws:bedrock:{REGION}::foundation-model/{MODEL}",
-        },
-        "type": "KNOWLEDGE_BASE"
-    }
-
-    response = BEDROCK_AGENT.retrieve_and_generate(
-        input={"text": question},
-        retrieveAndGenerateConfiguration=config
-    )
-
-    output   = response["output"]["text"]
-    citations = [
-        c["retrievedReferences"][0]["location"]["s3Location"]["uri"]
-        for c in response.get("citations", [])
-        if c.get("retrievedReferences")
-    ]
-    return output, citations
-
-
-# Compare both approaches on the same question
-question = "How do I configure LACP port aggregation on the QS-24?"
-
-print("=== Your RAG pipeline ===")
-chunks = retrieve(question, product_id="qs24")
-print(generate(question, chunks))
-
-print("\n=== AWS retrieve_and_generate ===")
-answer, sources = managed_answer(question)
-print(answer)
-print("Sources:", sources)
-```
-
-> [!TIP]
-> `retrieve_and_generate` automatically includes citations in the response. Your custom pipeline gives you more control over tone, format, and filtering. For production, the choice depends on how much you need to customise the generation prompt.
-
----
-
-## Step 6: Test in the browser
+## Step 5: Test in the browser
 
 The Flask app in `app.py` already calls `rag.answer()`. Run it and verify the full end-to-end flow works through the UI.
 
